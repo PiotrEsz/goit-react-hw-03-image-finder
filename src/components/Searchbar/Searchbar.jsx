@@ -1,58 +1,35 @@
 import React, { Component } from 'react';
-import css from './Searchbar.module.css';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import propTypes from 'prop-types';
-
-axios.defaults.baseURL = `https://pixabay.com/api/?`;
+import css from './searchbar.module.css';
+import PropTypes from 'prop-types';
 
 class Searchbar extends Component {
   state = {
-    value: '',
+    query: '',
   };
 
   handleChange = event => {
-    this.setState({
-      value: event.target.value,
-    });
+    this.setState({ query: event.target.value });
   };
 
   handleSubmit = event => {
     event.preventDefault();
-
-    const value = this.state.value;
-
-    if (value.trim() !== '' && this.props.query !== value) {
-      this.props.onFormSubmit(this.state.value);
-    } else if (value.trim() === '') {
-      toast.info('Please enter any query', {
-        position: 'top-right',
-        autoClose: 1500,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: false,
-        theme: 'light',
-      });
-      return;
-    }
+    this.props.onSubmit(this.state.query);
   };
 
   render() {
     return (
-      <header className={css.searchbar}>
-        <form className={css.searchForm} onSubmit={this.handleSubmit}>
-          <button type="submit" className={css.searchFormButton}>
-            <span className={css.searchFormButtonLabel}>Search</span>
+      <header className={css.Searchbar}>
+        <form className={css.SearchForm} onSubmit={this.handleSubmit}>
+          <button type="submit" className={css['SearchForm-button']}>
+            <span className={css['SearchForm-button-label']}>Search</span>
           </button>
-
           <input
-            className={css.searchFormInput}
-            value={this.state.value}
+            className={css['SearchForm-input']}
             type="text"
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
+            value={this.state.query}
             onChange={this.handleChange}
           />
         </form>
@@ -61,9 +38,7 @@ class Searchbar extends Component {
   }
 }
 
-export default Searchbar;
-
 Searchbar.propTypes = {
-  handleChange: propTypes.func,
-  handleSubmit: propTypes.func,
+  onSubmit: PropTypes.func.isRequired,
 };
+export default Searchbar;
