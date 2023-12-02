@@ -40,7 +40,7 @@ class App extends Component {
   fetchImages = async () => {
     const { query, page } = this.state;
     const perPage = 12;
-    const apiKey = '39493730-2b7f664c84691fe9cb5103ec9';
+    const apiKey = '32579471-afdc8e0303a1983f0362481fc';
     const url = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&pretty=true&page=${page}&per_page=${perPage}`;
 
     this.setState({ isLoading: true });
