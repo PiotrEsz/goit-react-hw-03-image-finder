@@ -1,41 +1,35 @@
 import React, { Component } from 'react';
 import css from './Modal.module.css';
-import PropTypes from 'prop-types';
+import propTypes from 'prop-types';
 
 class Modal extends Component {
   componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keyup', this.handleClose);
   }
 
   componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleClose);
   }
 
-  handleKeyDown = event => {
-    if (event.code === 'Escape') {
-      this.props.onClose();
-    }
-  };
-
   handleClose = event => {
-    if (event.target === event.currentTarget) {
-      this.props.onClose();
+    if (event.code === 'Escape') {
+      return this.props.hideMod();
     }
   };
 
   render() {
     return (
-      <div className={css.Overlay} onClick={this.handleClose}>
-        <div className={css.Modal}>
-          <img src={this.props.image.largeImageURL} alt="" />
+      <div className={css.overlay} onClick={this.props.hideMod}>
+        <div className={css.modal}>
+          <img src={this.props.largeImg} alt="result" />
         </div>
       </div>
     );
   }
 }
 
-Modal.propTypes = {
-  image: PropTypes.object.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
 export default Modal;
+
+Modal.propTypes = {
+  largeImg: propTypes.string,
+};

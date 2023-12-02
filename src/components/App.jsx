@@ -1,118 +1,165 @@
 import React, { Component } from 'react';
 import Searchbar from './Searchbar/Searchbar';
+import axios from 'axios';
+import fetchImages from '../utils/api';
 import ImageGallery from './ImageGallery/ImageGallery';
-import Button from './Button/Button';
-import LoaderSpinner from './Loader/Loader.js';
+import key from '../utils/key.json';
+
 import Modal from './Modal/Modal';
+import Button from './Button/Button';
+import Loader from './Loader/Loader';
+
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import 'index.css';
+
+axios.defaults.baseURL = `https://pixabay.com/api`;
+
+const KEY = Object.values(key);
+
+let params = '';
+
+const INITIAL_STATE = {
+  images: [],
+  query: '',
+  page: 1,
+  perPage: 12,
+  largeImageURL: '',
+  isLoading: false,
+  error: null,
+  isModalVisible: false,
+  totalHits: 0,
+  isLastPage: false,
+};
 
 class App extends Component {
   state = {
-    query: '',
-    images: [],
-    page: 1,
-    isLoading: false,
-    showModal: false,
-    selectedImage: null,
-    prevQuery: '',
+    ...INITIAL_STATE,
   };
 
-  componentDidUpdate(_, prevState) {
-    const { query, page, images } = this.state;
-    if (prevState.query !== query || prevState.page !== page) {
-      // Only fetch images if query or page has changed
-      this.fetchImages();
-    } else if (
-      prevState.images.length !== images.length &&
-      prevState.images.length !== 0
-    ) {
-      // Scroll to bottom if images have been updated and it's not the initial load
-      this.scrollToBottom();
-    }
-  }
+  handleSubmit = async (query, firstPage) => {
+    if (this.state.query !== query) {
+      this.setState({ query, images: [], page: 1, isLastPage: false });
+      params = `/?q=${query}&page=1&key=${KEY}&image_type=photo&orientation=horizontal&per_page=${this.state.perPage}`;
+    } else
+      params = `/?q=${query}&page=${this.state.page}&key=${KEY}&image_type=photo&orientation=horizontal&per_page=${this.state.perPage}`;
 
-  handleSearch = query => {
-    // check if the query is different from the previous query
-    if (query !== this.state.prevQuery) {
-      this.setState({ query, images: [], page: 1, prevQuery: query });
-    }
-  };
-
-  fetchImages = async () => {
-    const { query, page } = this.state;
-    const perPage = 12;
-    const apiKey = '32579471-afdc8e0303a1983f0362481fc';
-    const url = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&pretty=true&page=${page}&per_page=${perPage}`;
-
+    //starts with loading status
     this.setState({ isLoading: true });
 
     try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch images');
+      //invoking fetching images
+      const images = await fetchImages(params);
+
+      //setting new state values
+      this.setState({
+        images: images.hits,
+        totalHits: images.totalHits,
+        isLastPage: this.checkIfLastPage(images.totalHits),
+      });
+
+      //changing state and add new images to existing ones on load more btn
+      if (images && images.hits.length > 0) {
+        this.setState(() => {
+          return {
+            images: [...this.state.images, ...images.hits],
+            page: this.state.page + 1,
+            isLoading: false,
+          };
+        });
       }
-
-      const data = await response.json();
-      if (data.totalHits === 0) {
-        throw new Error('No images found for the given query');
-      }
-
-      this.setState(prevState => ({
-        images: [...prevState.images, ...data.hits],
-      }));
-
-      // add delay to
-      setTimeout(() => {
-        this.setState({ isLoading: false });
-      }, 500);
     } catch (error) {
-      console.error(error.message);
+      //handling error
+      this.setState({ error });
+
+      toast.error(error.message, {
+        position: 'top-right',
+        autoClose: 2500,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+        theme: 'light',
+      });
+    } finally {
+      // changing state for laoder independently on promise (fetchImages) return
       this.setState({ isLoading: false });
     }
   };
 
-  scrollToBottom = () => {
-    let currentScrollPosition = window.scrollY;
-    let targetScrollPosition = document.body.scrollHeight - window.innerHeight;
-    let scrollStep = Math.round(
-      (targetScrollPosition - currentScrollPosition) / 20
-    );
+  //method to return isLastPage (boolean) basing on number of hits for searching
+  checkIfLastPage = totalHits => {
+    const noOfPages = Math.ceil(totalHits / this.state.perPage);
+    const isLastPage = noOfPages === this.state.page;
 
-    const smoothScroll = () => {
-      currentScrollPosition += scrollStep;
-      window.scrollTo(0, currentScrollPosition);
-
-      if (currentScrollPosition < targetScrollPosition) {
-        window.requestAnimationFrame(smoothScroll);
-      }
-    };
-
-    window.requestAnimationFrame(smoothScroll);
+    return isLastPage;
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  //method to show modal basing on isModalVisible state value
+  showModal = largeImg => {
+    this.setState({ isModalVisible: true, largeImageURL: largeImg });
   };
 
-  handleImageClick = image => {
-    this.setState({ showModal: true, selectedImage: image });
+  //method to show modal basing on isModalVisible state value
+  hideModal = () => {
+    this.setState({
+      isModalVisible: false, //!this.state.isModalVisible,
+      largeImageURL: '',
+    });
   };
 
-  closeModal = () => {
-    this.setState({ showModal: false, selectedImage: null });
+  loadMore = async e => {
+    e.preventDefault();
+
+    this.handleSubmit(this.state.query);
+  };
+
+  //method to show info if maximum number of images is loaded
+  messageIfMax = () => {
+    toast.info("You've have reached maximum number of images ", {
+      position: 'top-right',
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: true,
+      progress: undefined,
+      theme: 'light',
+    });
   };
 
   render() {
-    const { images, isLoading, showModal, selectedImage } = this.state;
+    const {
+      images,
+      isLoading,
+      isModalVisible,
+      query,
+      largeImageURL,
+      page,
+      totalHits,
+      isLastPage,
+    } = this.state;
 
     return (
       <div className="App">
-        <Searchbar onSubmit={this.handleSearch} />
-        <ImageGallery images={images} onImageClick={this.handleImageClick} />
-        {isLoading && <LoaderSpinner />}
-        {images.length > 0 && !isLoading && (
-          <Button onClick={this.handleLoadMore}>Load more</Button>
+        <Searchbar
+          onFormSubmit={this.handleSubmit}
+          query={query}
+          pageNo={page}
+        />
+        {isLoading && <Loader />}
+
+        <ImageGallery imagesArr={images} showModal={this.showModal} />
+        {isModalVisible && (
+          <Modal hideMod={this.hideModal} largeImg={largeImageURL} />
         )}
-        {showModal && <Modal image={selectedImage} onClose={this.closeModal} />}
+        <ToastContainer />
+        {totalHits > 12 && isLastPage === false ? (
+          <Button loadMore={this.loadMore} />
+        ) : (
+          ''
+        )}
+        {isLastPage === true && this.messageIfMax()}
       </div>
     );
   }
