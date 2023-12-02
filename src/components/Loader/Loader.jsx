@@ -1,21 +1,22 @@
-import React, { Component } from 'react';
-import { GridLoader } from 'react-spinners';
+import React from 'react';
+import { ThreeDots } from 'react-loader-spinner';
 import css from './Loader.module.css';
 
-class Loader extends Component {
+class LoaderSpinner extends React.Component {
   render() {
     return (
-      <div className={css.loader}>
-        <GridLoader
-          color={'#3f51b5'}
-          loading={true}
-          margin={5}
-          width={11}
-          aria-label="Loading Spinner"
+      <div className={css.Loader}>
+        <ThreeDots
+          height="60"
+          width="80"
+          radius="16"
+          color="#3f51b5"
+          ariaLabel="three-dots-loading"
+          visible={true}
         />
       </div>
     );
   }
 }
 
-export default Loader;
+export default LoaderSpinner;
